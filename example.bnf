@@ -1,0 +1,12 @@
+
+<non_zero_digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+<digit> ::= "0" | <non_zero_digit>
+
+<many_digits> ::= <digit> <many_digits>
+                | <digit>
+
+<number> ::= <non_zero_digit> <many_digits>
+           | <digit>
+
+<date> ::= <number> "/" <number> "/" <number>

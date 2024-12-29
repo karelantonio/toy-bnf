@@ -1,0 +1,10 @@
+[package]
+name = "toy-bnf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.94"
+linefeed = "0.6.0"
+logos = "0.15.0"
+thiserror = "2.0.8"
