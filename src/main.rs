@@ -1,30 +1,40 @@
-use anyhow::Result;
-use std::{
-    fs::read_to_string,
-    path::absolute,
-};
-use clap::Parser;
+//! Simple program to run and test your grammars against text files inside your
+//! terminal. Inspired by https://bnfplayground.pauliankline.com
 
-mod lex;
+use anyhow::Result;
+use clap::Parser;
+use std::{fs::read_to_string, path::absolute};
+
 mod ast;
 mod engine;
+mod lex;
 
 /// The command line arguments
 #[derive(Parser)]
-#[command(name="Toy BNF")]
+#[command(name = "Toy BNF")]
 pub struct Args {
-    #[arg(help="The path to the BNF file")]
+    /// The path to the grammar file
+    #[arg(help = "The path to the BNF file")]
     path: String,
 
-    #[arg(short='l', long="dump-lex", help="Dump the BNF lex tokens (to stderr)")]
+    /// Dump the lex tokens
+    #[arg(
+        short = 'l',
+        long = "dump-lex",
+        help = "Dump the BNF lex tokens (to stderr)"
+    )]
     dump_lex: bool,
 
-    #[arg(short='a', long="dump-ast", help="Dump the BNF ast tree (to stderr)")]
+    /// Dump the ast tree
+    #[arg(
+        short = 'a',
+        long = "dump-ast",
+        help = "Dump the BNF ast tree (to stderr)"
+    )]
     dump_ast: bool,
 }
 
 fn main() -> Result<()> {
-
     let args = Args::parse();
 
     // Parse the BNF
