@@ -41,5 +41,7 @@ fn main() -> Result<()> {
         eprintln!("Ast tree: {tree:#?}");
     }
 
+    let _engine = engine::Engine::build(&tree)?;
+
     Ok(())
 }

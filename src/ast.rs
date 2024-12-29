@@ -27,18 +27,17 @@ pub enum Atom {
 
 #[derive(Debug)]
 pub struct RuleVariant {
-    items: Vec<Atom>,
+    pub items: Vec<Atom>,
 }
 
 #[derive(Debug)]
 pub struct Rule {
-    name: String,
-    variants: Vec<RuleVariant>,
+    pub name: String,
+    pub variants: Vec<RuleVariant>,
 }
 
 type ParseResult = std::result::Result<Vec<Rule>, ParseError>;
 use crate::lex::{tokenize, LexError, Tk};
-use logos::Logos;
 
 impl Rule {
     pub fn parse(data: &str) -> ParseResult {
