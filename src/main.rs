@@ -17,6 +17,14 @@ pub struct Args {
     #[arg(help = "The path to the BNF file")]
     path: String,
 
+    /// Generate a random valid string
+    #[arg(
+        short = 'r',
+        long = "gen-random",
+        help = "Generate a (valid) random string with the given initial rule"
+    )]
+    gen_random: Option<String>,
+
     /// Dump the lex tokens
     #[arg(
         short = 'l',
@@ -46,12 +54,16 @@ fn main() -> Result<()> {
         eprintln!("Lex tokens: {tokens:#?}");
     }
 
-    let tree = ast::Rule::parse(&file)?;
+    let tree = ast::parse(&file)?;
     if args.dump_ast {
         eprintln!("Ast tree: {tree:#?}");
     }
 
-    let _engine = engine::Engine::build(&tree)?;
+    let engine = engine::Engine::build(&tree)?;
+
+    if let Some(rule) = args.gen_random {
+        println!("{}", engine.gen_random(rule));
+    }
 
     Ok(())
 }

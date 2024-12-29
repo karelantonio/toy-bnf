@@ -9,7 +9,7 @@
 /// Errors that may happen while parsing
 /// This includes the Lex which is not actually part of the parsing
 /// but
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum ParseError {
     /// The errors ocurred under the reduce_atom stage
     #[error("While parsing rule atom")]
@@ -33,7 +33,7 @@ pub enum ParseError {
 
     /// Error while lexing the data
     #[error("Lex error")]
-    Lex(#[from] crate::lex::LexError),
+    Lex(#[from] LexError),
 }
 
 /// An atom is the basic unit of information in this Tree
@@ -48,7 +48,7 @@ pub enum ParseError {
 ///  * <params> Is a reference to another rule called `param` which may be a list of numbers, or
 ///     any thing you have defined
 ///  * ")" Is the last terminal element
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Atom {
     Terminal { content: String },
     NonTerminal { name: String },
@@ -56,7 +56,7 @@ pub enum Atom {
 
 /// It is a set of terminals and non-terminals that a rule may match
 /// More information in [`Rule`]'s docs
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RuleVariant {
     pub items: Vec<Atom>,
 }
@@ -102,7 +102,7 @@ pub struct RuleVariant {
 ///
 /// <date> ::= <number> "/" <number> "/" <date>
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rule {
     pub name: String,
     pub variants: Vec<RuleVariant>,

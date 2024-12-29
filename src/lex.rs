@@ -4,7 +4,7 @@ use logos::Logos;
 
 /// Error that may happen while lexing the input
 /// (Well, just one error, an unexpected character)
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum LexError {
     #[error("Unexpected character at line: {0}, near: {0}")]
     Unexpected(usize, String),

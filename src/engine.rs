@@ -1,4 +1,7 @@
-use crate::ast::Rule;
+//! The engine is where the BNF gets used
+//! See the [`Engine`] docs for more information
+
+use crate::ast::{Atom, Rule};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(thiserror::Error, Debug)]
@@ -14,10 +17,15 @@ pub enum BuildError {
 }
 
 pub struct Engine {
-    tree: Vec<Rule>,
+    tree: BTreeMap<String, Rule>,
 }
 
 impl Engine {
+    /// Generate a new random (valid) string
+    pub fn gen_random(&self, rule: String) -> String {
+        todo!();
+    }
+
     /// Check if the given rule causes a recursion error
     /// TODO: Currently this checks for cicles in O(n) time each rule, in total O( n^2 )
     /// This could be improved to check if exists a cycle in one pass in O(n)
@@ -53,6 +61,8 @@ impl Engine {
         return false;
     }
 
+    /// Create a new instance of this engine and verify if there is any possible error at
+    /// run time
     pub fn build(ast: &[Rule]) -> Result<Engine, BuildError> {
         // First check if names are duplicated
         let mut names = BTreeSet::<String>::new();
@@ -76,14 +86,16 @@ impl Engine {
         for rule in ast {
             for variant in rule.variants.iter() {
                 for item in variant.items.iter() {
-                    if let crate::ast::Atom::NonTerminal { name } = item {
-                        if !names.contains(name) {
-                            return Err(BuildError::InexistentNonTerminals(
-                                rule.name.clone(),
-                                name.clone(),
-                            ));
-                        }
-                    }
+                    let Atom::NonTerminal { name } = item else {
+                        continue;
+                    };
+                    if names.contains(name) {
+                        continue;
+                    };
+                    return Err(BuildError::InexistentNonTerminals(
+                        rule.name.clone(),
+                        name.clone(),
+                    ));
                 }
             }
         }
@@ -96,6 +108,12 @@ impl Engine {
             }
         }
 
-        panic!();
+        let mut all = BTreeMap::new();
+
+        for rule in ast {
+            all.insert(rule.name.clone(), rule.clone());
+        }
+
+        Ok(Self { tree: all })
     }
 }
