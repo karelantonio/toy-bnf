@@ -2,6 +2,7 @@
 //! See the [`Engine`] docs for more information
 
 use crate::ast::{Atom, Rule};
+use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(thiserror::Error, Debug)]
@@ -21,9 +22,30 @@ pub struct Engine {
 }
 
 impl Engine {
+    fn gen_random_variant(&self, rule: &Rule, rng: &mut ThreadRng) -> String {
+        // Choose 1 variant
+        let var: usize = rng.gen_range(0..rule.variants.len());
+        let var = &rule.variants[var];
+        let mut res = String::with_capacity(1024);
+
+        for item in var.items.iter() {
+            match item {
+                Atom::Terminal { content } => {
+                    res += &content;
+                }
+                Atom::NonTerminal { name } => {
+                    res += &self.gen_random_variant(&self.tree[name], rng);
+                }
+            }
+        }
+
+        res
+    }
+
     /// Generate a new random (valid) string
     pub fn gen_random(&self, rule: String) -> String {
-        todo!();
+        let mut rng = thread_rng();
+        self.gen_random_variant(&self.tree[&rule], &mut rng)
     }
 
     /// Check if the given rule causes a recursion error
