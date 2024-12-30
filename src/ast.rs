@@ -221,6 +221,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 // Ok
             }
             [Tk::Nl, Tk::Pipe, ..] => {
+                self.lineno += 1;
                 self.data = &self.data[2..];
                 // Also Ok
             }
@@ -300,6 +301,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     fn reduce_rules(&mut self, rules: &mut Vec<Rule>) -> Result<(), ParseError> {
         match self.data {
             [Tk::Nl, ..] => {
+                self.lineno += 1;
                 self.data = &self.data[1..];
                 self.reduce_rules(rules)
             }
