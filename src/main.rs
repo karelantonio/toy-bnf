@@ -48,6 +48,14 @@ enum Action {
     #[command(name = "match")]
     Match {
         #[arg(
+            short = 'P',
+            long = "no-pretty",
+            help = "Dont pretty-print the matches",
+            default_value = "false"
+        )]
+        no_pretty: bool,
+
+        #[arg(
             short = 'f',
             long = "file",
             name = "file",
@@ -120,6 +128,7 @@ fn main() -> Result<()> {
             file,
             initial,
             rule,
+            no_pretty,
         } => {
             let file = file.unwrap_or("/dev/stdin".into());
             // Resolve the file first
@@ -132,10 +141,54 @@ fn main() -> Result<()> {
             // Create the engine
             let tree = ast::parse(&bnf_file)?;
             let engine = engine::Engine::build(&tree)?;
-            for (start, end) in
-                engine.match_rule(&initial, &rule.unwrap_or(initial.clone()), &content)?
-            {
-                println!("Match {start}..{end}: {}", &content[start..end]);
+
+            let matches =
+                engine.match_rule(&initial, &rule.unwrap_or(initial.clone()), &content)?;
+
+            if no_pretty {
+                for (start, end) in matches {
+                    println!("Match {start}..{end}: {}", &content[start..end]);
+                }
+            } else {
+                // The colors (Green, blue, yellow and red)
+                const COLORS: &[&str] = &["42;30", "44;30", "43;30", "41;30"];
+                let mut lastdep = 0;
+                let mut bld = String::with_capacity(content.len()*5);
+                for (idx, c) in content.chars().enumerate() {
+                    // TODO: Optimize this
+                    let mut depth = 0;
+                    for (start, end) in matches.iter() {
+                        if start <= &idx && &idx < end {
+                            depth += 1;
+                        }
+                    }
+                    if depth == lastdep {
+                        // Do nothing, just put a char
+                        bld.push(c);
+                        continue;
+                    }
+                    // Update the depth and color
+                    lastdep = depth;
+                    if depth == 0 {
+                        // Set no color
+                        bld.extend("\x1b[0m".chars());
+                    } else {
+                        // Set the new color
+                        let newcol = COLORS[(depth - 1) % COLORS.len()];
+                        bld.extend("\x1b[".chars());
+                        bld.extend(newcol.chars());
+                        bld.extend("m".chars());
+                    }
+
+                    bld.push(c);
+                }
+                // Clear the color if was not black
+                if lastdep != 0 {
+                    bld.extend("\x1b[0m".chars());
+                }
+
+                println!("Matches:");
+                println!("{bld}");
             }
         }
     }
