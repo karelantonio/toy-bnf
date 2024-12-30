@@ -6,7 +6,7 @@ use logos::Logos;
 /// (Well, just one error, an unexpected character)
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum LexError {
-    #[error("Unexpected character at line: {0}, near: {0}")]
+    #[error("Unexpected character at line: {0}, near: {1}")]
     Unexpected(usize, String),
 }
 

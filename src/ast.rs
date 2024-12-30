@@ -140,7 +140,17 @@ impl<'a, 'b> Parser<'a, 'b> {
         let mut was_escaped = false;
         for c in data.chars() {
             if was_escaped {
-                out.push(c);
+                if c=='n' {
+                    out.push('\n');
+                }else if c=='t' {
+                    out.push('\t');
+                }else if c=='r' {
+                    out.push('\r');
+                }else if c=='r' {
+                    out.push('\r');
+                }else{
+                    out.push(c);
+                }
                 was_escaped = false;
             }else if c=='\\' {
                 was_escaped = true;
