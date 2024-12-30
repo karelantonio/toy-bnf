@@ -6,6 +6,24 @@ use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(thiserror::Error, Debug)]
+pub enum GenerateError {
+    #[error("The rule {0} does not exist")]
+    BadRule(String),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum MatchError {
+    #[error("That initial rule: {0} does not exist")]
+    BadInitialRule(String),
+
+    #[error("That Watch rule: {0} does not exist")]
+    BadWatchRule(String),
+
+    #[error("No matches")]
+    NoMatches,
+}
+
+#[derive(thiserror::Error, Debug)]
 pub enum BuildError {
     #[error("Expression contains duplicated names: {0:?}")]
     DuplicatedNames(Vec<String>),
@@ -43,9 +61,93 @@ impl Engine {
     }
 
     /// Generate a new random (valid) string
-    pub fn gen_random(&self, rule: String) -> String {
+    pub fn gen_random(&self, rule: &str) -> Result<String, GenerateError> {
         let mut rng = thread_rng();
-        self.gen_random_variant(&self.tree[&rule], &mut rng)
+
+        let Some(rule) = self.tree.get(rule) else {
+            return Err(GenerateError::BadRule(rule.into()));
+        };
+
+        Ok(self.gen_random_variant(rule, &mut rng))
+    }
+
+    /// Match against the given rule (and optionally save the range)
+    /// rule: The current rule to match against
+    /// to_watch: The rule which may be watched (saved to the vector)
+    /// data: The input data (already sliced to the current offset)
+    /// offset: The current offset (to add to the output vector)
+    /// outp: The output vector
+    fn match_against(
+        &self,
+        rule: &Rule,
+        to_watch: &str,
+        data: &str,
+        offset: usize,
+        outp: &mut Vec<(usize, usize)>,
+    ) -> Result<usize, ()> {
+        let mut sub = Vec::new();
+
+        'varloop: for variant in rule.variants.iter() {
+            sub.clear();
+
+            let mut data = data;
+            let mut proc = 0;
+
+            // Only save the values when all the atoms in the variant have succeed
+            for item in variant.items.iter() {
+                match item {
+                    Atom::Terminal { content } => {
+                        if !data.starts_with(content) {
+                            continue 'varloop;
+                        }
+                        data = &data[content.len()..];
+                        proc += content.len();
+                    }
+                    Atom::NonTerminal { name } => {
+                        let subrule = &self.tree[name];
+                        let Ok(processed) =
+                            self.match_against(subrule, to_watch, data, offset + proc, &mut sub)
+                        else {
+                            continue 'varloop;
+                        };
+                        data = &data[processed..];
+                        proc += processed;
+                    }
+                }
+            }
+
+            // All atoms matched, save and return the slice
+            // If this rule matched, add to the output vector
+            if rule.name == to_watch {
+                outp.push((offset, offset + proc));
+            }
+            outp.extend(sub);
+            return Ok(proc);
+        }
+
+        Err(())
+    }
+
+    /// Get the matches of a rule in the given data, starting from the given rule
+    pub fn match_rule(
+        &self,
+        initial: &str,
+        to_watch: &str,
+        data: &str,
+    ) -> Result<Vec<(usize, usize)>, MatchError> {
+        if !self.tree.contains_key(initial) {
+            return Err(MatchError::BadInitialRule(initial.into()));
+        }
+
+        if !self.tree.contains_key(to_watch) {
+            return Err(MatchError::BadWatchRule(to_watch.into()));
+        }
+
+        let mut outp = Vec::new();
+        let _ = self
+            .match_against(&self.tree[initial], to_watch, data, 0, &mut outp)
+            .map_err(|_| MatchError::NoMatches)?;
+        Ok(outp)
     }
 
     /// Check if the given rule causes a recursion error
