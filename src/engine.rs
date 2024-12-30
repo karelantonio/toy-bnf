@@ -37,6 +37,7 @@ pub enum BuildError {
 
 pub struct Engine {
     tree: BTreeMap<String, Rule>,
+    debug: bool,
 }
 
 impl Engine {
@@ -80,14 +81,26 @@ impl Engine {
     fn match_against(
         &self,
         rule: &Rule,
-        to_watch: &str,
+        to_watch: &[String],
         data: &str,
         offset: usize,
         outp: &mut Vec<(usize, usize)>,
     ) -> Result<usize, ()> {
+        if self.debug {
+            // Should probably use the `log` crate
+            eprintln!(
+                "[*] Matching agains: {rule:?}, near: {:?}",
+                &data[..data.len().min(5)]
+            );
+        }
+
         let mut sub = Vec::new();
 
         'varloop: for variant in rule.variants.iter() {
+            if self.debug {
+                eprintln!("Trying variant: {variant:?}");
+            }
+
             sub.clear();
 
             let mut data = data;
@@ -98,8 +111,17 @@ impl Engine {
                 match item {
                     Atom::Terminal { content } => {
                         if !data.starts_with(content) {
+                            if self.debug {
+                                eprintln!("Terminal {content:?} did not match near: {:?}, skipping variant", &data[..data.len().min(5)]);
+                            }
+
                             continue 'varloop;
                         }
+
+                        if self.debug {
+                            eprintln!("Terminal {content:?} matched completely");
+                        }
+
                         data = &data[content.len()..];
                         proc += content.len();
                     }
@@ -116,9 +138,13 @@ impl Engine {
                 }
             }
 
+            if self.debug {
+                eprintln!("Done matching against {rule:?}");
+            }
+
             // All atoms matched, save and return the slice
             // If this rule matched, add to the output vector
-            if rule.name == to_watch {
+            if to_watch.contains(&rule.name) {
                 outp.push((offset, offset + proc));
             }
             outp.extend(sub);
@@ -132,15 +158,17 @@ impl Engine {
     pub fn match_rule(
         &self,
         initial: &str,
-        to_watch: &str,
+        to_watch: &[String],
         data: &str,
     ) -> Result<Vec<(usize, usize)>, MatchError> {
         if !self.tree.contains_key(initial) {
             return Err(MatchError::BadInitialRule(initial.into()));
         }
 
-        if !self.tree.contains_key(to_watch) {
-            return Err(MatchError::BadWatchRule(to_watch.into()));
+        for rule in to_watch {
+            if !self.tree.contains_key(rule) {
+                return Err(MatchError::BadWatchRule(rule.clone()));
+            }
         }
 
         let mut outp = Vec::new();
@@ -187,7 +215,7 @@ impl Engine {
 
     /// Create a new instance of this engine and verify if there is any possible error at
     /// run time
-    pub fn build(ast: &[Rule]) -> Result<Engine, BuildError> {
+    pub fn build(ast: &[Rule], debug: bool) -> Result<Engine, BuildError> {
         // First check if names are duplicated
         let mut names = BTreeSet::<String>::new();
         let mut dup = Vec::new();
@@ -238,6 +266,6 @@ impl Engine {
             all.insert(rule.name.clone(), rule.clone());
         }
 
-        Ok(Self { tree: all })
+        Ok(Self { tree: all, debug })
     }
 }

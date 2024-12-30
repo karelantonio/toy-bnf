@@ -37,6 +37,14 @@ enum Action {
     #[command(name = "generate")]
     Generate {
         #[arg(
+            short = 'd',
+            long = "debug",
+            help = "Enable debug output",
+            default_value = "false"
+        )]
+        debug: bool,
+
+        #[arg(
             short = 'n',
             long = "name",
             name = "rule-name",
@@ -47,6 +55,14 @@ enum Action {
 
     #[command(name = "match")]
     Match {
+        #[arg(
+            short = 'd',
+            long = "debug",
+            help = "Enable debug output",
+            default_value = "false"
+        )]
+        debug: bool,
+
         #[arg(
             short = 'P',
             long = "no-pretty",
@@ -75,9 +91,9 @@ enum Action {
             short = 'W',
             long = "watch",
             name = "rule",
-            help = "Watch the given rule, by default the same as the initial rule"
+            help = "Watch the given rules (use multiple times to watch more than one), by default the same as the initial rule"
         )]
-        rule: Option<String>,
+        rules: Vec<String>,
     },
 }
 
@@ -118,17 +134,18 @@ fn main() -> Result<()> {
                 println!("Ast tree: {tree:?}");
             }
         }
-        Action::Generate { rule_name } => {
+        Action::Generate { rule_name, debug } => {
             let tree = ast::parse(&bnf_file)?;
-            let engine = engine::Engine::build(&tree)?;
+            let engine = engine::Engine::build(&tree, debug)?;
             println!("{}", engine.gen_random(&rule_name)?);
         }
 
         Action::Match {
             file,
             initial,
-            rule,
+            rules,
             no_pretty,
+            debug,
         } => {
             let file = file.unwrap_or("/dev/stdin".into());
             // Resolve the file first
@@ -140,10 +157,15 @@ fn main() -> Result<()> {
             let content = read_to_string(file)?;
             // Create the engine
             let tree = ast::parse(&bnf_file)?;
-            let engine = engine::Engine::build(&tree)?;
+            let engine = engine::Engine::build(&tree, debug)?;
 
-            let matches =
-                engine.match_rule(&initial, &rule.unwrap_or(initial.clone()), &content)?;
+            let rules = if rules.len() == 0 {
+                vec![initial.clone()]
+            } else {
+                rules
+            };
+
+            let matches = engine.match_rule(&initial, &rules, &content)?;
 
             if no_pretty {
                 for (start, end) in matches {
@@ -153,7 +175,7 @@ fn main() -> Result<()> {
                 // The colors (Green, blue, yellow and red)
                 const COLORS: &[&str] = &["42;30", "44;30", "43;30", "41;30"];
                 let mut lastdep = 0;
-                let mut bld = String::with_capacity(content.len()*5);
+                let mut bld = String::with_capacity(content.len() * 5);
                 for (idx, c) in content.chars().enumerate() {
                     // TODO: Optimize this
                     let mut depth = 0;
