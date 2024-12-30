@@ -1,0 +1,57 @@
+
+<lowercase> ::=  "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+<uppercase> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+<number> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+<space> ::= " " | "\t"
+<spaces> ::= <space> <spaces> | <space>
+<nl> ::= "\n"
+<sp_nl> ::= <spaces> <nl> | <nl>
+
+
+
+
+<terminal_char> ::= <lowercase> | <uppercase> | <number> | <spaces>
+<terminal_chars> ::= <terminal_char> <terminal_chars>
+                   | <terminal_char>
+<nospace_terminal> ::= "\"" <terminal_chars> "\""
+                     | "\"" "\""
+<terminal> ::= <spaces> <nospace_terminal>
+             | <nospace_terminal>
+
+
+
+
+<nterminal_id_char_nofst> ::= <lowercase> | <uppercase> | <number> | "_"
+<nterminal_id_char> ::= <lowercase> | <uppercase> | "_"
+<nterminal_id_chars_nofst> ::= <nterminal_id_char_nofst> <nterminal_id_chars_nofst>
+                             | <nterminal_id_char_nofst>
+<nterminal_id_chars> ::= <nterminal_id_char> <nterminal_id_chars_nofst>
+                       | <nterminal_id_char>
+<nterminal_id> ::= <spaces> <nterminal_id_chars>
+                 | <nterminal_id_chars>
+<nospace_nterminal> ::= "<" <nterminal_id> <spaces> ">"
+                      | "<" <nterminal_id> ">"
+<nterminal> ::= <spaces> <nospace_nterminal> | <nospace_nterminal>
+
+
+
+
+<atom> ::= <terminal> | <nterminal>
+
+
+<sppipe> ::= "|" | <spaces> "|"
+<nlpipe> ::= <spaces> <nl> <sppipe>
+           | <nl> <sppipe>
+<pipe> ::= <sppipe> | <nlpipe>
+
+<rule_variant_items> ::= <atom> <rule_variant_items>
+                       | <atom>
+<rule_variant> ::= <rule_variant_items>
+<rule_variants_many>     ::= <rule_variant> <pipe> <rule_variants_many>
+                           | <rule_variant>
+<rule_variants> ::= <rule_variants_many>
+<rule_name> ::= <nterminal>
+<rule_assign> ::= <spaces> "::=" | "::="
+<rule> ::= <rule_name> <rule_assign> <rule_variants>
+
+<rules> ::= <rule> <rules> | <nl> <rules> | <spaces> <rules> | <rule> | <nl> | <spaces>
