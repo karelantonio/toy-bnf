@@ -134,6 +134,23 @@ impl<'a, 'b> Parser<'a, 'b> {
         ParseError::UnexpectedHint(self.lineno, tk, expecting.into())
     }
 
+    fn un_escape(&self, data: &str) -> String {
+        let mut out = String::with_capacity(data.len());
+        
+        let mut was_escaped = false;
+        for c in data.chars() {
+            if was_escaped {
+                out.push(c);
+                was_escaped = false;
+            }else if c=='\\' {
+                was_escaped = true;
+            }else{
+                out.push(c);
+            }
+        }
+        out
+    }
+
     /// Pop an atom from the input data
     /// See [`Atom`]
     fn reduce_atom(&mut self) -> Result<Atom, ParseError> {
@@ -143,7 +160,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             [Tk::Terminal(term), ..] => {
                 self.data = &self.data[1..];
                 return Ok(Atom::Terminal {
-                    content: term.to_string(),
+                    content: self.un_escape(term),
                 });
             }
             _ => return Err(ParseError::InAtom(self.unexpected("'<' or \"...\"").into())),
