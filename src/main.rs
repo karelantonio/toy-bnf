@@ -81,15 +81,6 @@ struct Args {
     #[arg(name = "path", help = "The path to the BNF file")]
     path: String,
 
-    /// Generate a random valid string
-    #[arg(
-        short = 'r',
-        long = "gen-random",
-        name = "initial_rule",
-        help = "Generate a (valid) random string with the given initial rule"
-    )]
-    gen_random: Option<String>,
-
     /// What to do
     #[command(subcommand, name = "action")]
     action: Action,
